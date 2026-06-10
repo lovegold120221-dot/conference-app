@@ -50,6 +50,9 @@ export function useTranslationRouting(myLang: string) {
   useEffect(() => {
     if (!room) return;
 
+    const myIdentity = room.localParticipant?.identity;
+    if (!myIdentity) return;
+
     const apply = () => {
       const remotes = Array.from(room.remoteParticipants.values());
       const peerLangs = new Map<string, string | undefined>();
@@ -60,7 +63,7 @@ export function useTranslationRouting(myLang: string) {
 
       for (const p of remotes) {
         if (p.kind === ParticipantKind.AGENT) {
-          applyAgentSubscriptions(p, myLang, peerLangs);
+          applyAgentSubscriptions(p, myLang, peerLangs, myIdentity);
         } else {
           applyHumanSubscriptions(p, myLang);
         }
@@ -102,11 +105,18 @@ function applyAgentSubscriptions(
   agent: RemoteParticipant,
   myLang: string,
   peerLangs: Map<string, string | undefined>,
+  myIdentity: string,
 ) {
   for (const pub of agent.audioTrackPublications.values()) {
     const parsed = parseTranslationTrackName(pub.trackName);
     if (!parsed) {
       // Not a translation track (e.g., agent state audio). Don't touch.
+      continue;
+    }
+
+    // ── Never hear your own speech translated back to you ──
+    if (parsed.sourceIdentity === myIdentity) {
+      setSubscribed(pub, false);
       continue;
     }
 
