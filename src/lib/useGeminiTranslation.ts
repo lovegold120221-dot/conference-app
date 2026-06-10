@@ -5,7 +5,7 @@ import {
   useRemoteParticipants,
   useRoomContext,
 } from "@livekit/components-react";
-import { RoomEvent, Track } from "livekit-client";
+import { RoomEvent } from "livekit-client";
 import { GeminiLiveClient, type GeminiStatus } from "./geminiLiveClient";
 import { AudioPipeline } from "./audioPipeline";
 import { DICTIONARY_LANGS, NATIVE_LANG } from "./config";
@@ -127,13 +127,13 @@ export function useGeminiTranslation(
 
         // 6. Wire up already-connected remote participants.
         for (const p of remoteParticipants) {
-          const pub = p.getTrackPublication(Track.Source.Microphone);
-          if (!pub?.track) continue;
-          if (pub.track.mediaStream) {
-            pipeline.addRemoteTrack(
-              p.identity,
-              pub.track.mediaStream,
-            );
+          for (const pub of p.audioTrackPublications.values()) {
+            if (pub.track?.mediaStream) {
+              pipeline.addRemoteTrack(
+                `${p.identity}:${pub.source}`,
+                pub.track.mediaStream,
+              );
+            }
           }
         }
       } catch (err) {
@@ -157,22 +157,27 @@ export function useGeminiTranslation(
   }, [targetLang]);
 
   // ── Track newly-published / unpublished remote audio tracks ──
+  // We subscribe to ALL audio sources (mic, screen share, etc.) so that
+  // shared screen / video audio is also fed into Gemini for translation.
+  // Composite stream IDs avoid collisions between mic and screen share
+  // tracks from the same participant.
   useEffect(() => {
     if (!room) return;
+
+    const streamId = (identity: string, source: string) =>
+      `${identity}:${source}`;
 
     const handleSub = (track: any) => {
       const pipeline = pipelineRef.current;
       if (!pipeline) return;
       if (track.kind !== "audio") return;
-      // Find the participant who owns this track
       for (const p of room.remoteParticipants.values()) {
         for (const pub of p.audioTrackPublications.values()) {
-          if (
-            pub.track === track &&
-            track.mediaStream &&
-            pub.source === Track.Source.Microphone
-          ) {
-            pipeline.addRemoteTrack(p.identity, track.mediaStream);
+          if (pub.track === track && track.mediaStream) {
+            pipeline.addRemoteTrack(
+              streamId(p.identity, pub.source),
+              track.mediaStream,
+            );
             return;
           }
         }
@@ -182,11 +187,10 @@ export function useGeminiTranslation(
     const handleUnsub = (track: any) => {
       const pipeline = pipelineRef.current;
       if (!pipeline) return;
-      // Find the participant who owned this track
       for (const p of room.remoteParticipants.values()) {
         for (const pub of p.audioTrackPublications.values()) {
-          if (pub.track === track && pub.source === Track.Source.Microphone) {
-            pipeline.removeRemoteTrack(p.identity);
+          if (pub.track === track) {
+            pipeline.removeRemoteTrack(streamId(p.identity, pub.source));
             return;
           }
         }

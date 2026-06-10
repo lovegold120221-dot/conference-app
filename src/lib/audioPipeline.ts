@@ -2,7 +2,8 @@
  * Browser-side audio pipeline for the client-side translation architecture.
  *
  * Responsibilities:
- *  1. Mix remote participants' mic audio into a single 16 kHz mono PCM stream
+ *  1. Mix remote participants' audio (mic, screen share, etc.) into a single
+ *     16 kHz mono PCM stream
  *  2. Call a user-provided callback with each PCM chunk (→ GeminiLiveClient.sendAudio)
  *  3. Play back translated PCM audio received from Gemini (via playTranslatedAudio)
  *
@@ -70,8 +71,8 @@ export class AudioPipeline {
   }
 
   /**
-   * Add a remote participant's mic MediaStream to the mix.
-   * Duplicate streamIds are silently ignored.
+   * Add a remote participant's audio MediaStream (mic, screen share, etc.)
+   * to the mix. Duplicate streamIds are silently ignored.
    */
   addRemoteTrack(streamId: string, stream: MediaStream): void {
     if (!this.ctx || this.sourceNodes.some((n) => n.streamId === streamId))
