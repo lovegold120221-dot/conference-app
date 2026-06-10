@@ -7,7 +7,7 @@ import AudioVisualizer from "./room/AudioVisualizer";
 
 const STORAGE_KEY_NAME = "lt.displayName";
 const STORAGE_KEY_LANG = "lt.lang";
-const STORAGE_KEY_ECHO = "lt.echo";
+const STORAGE_KEY_SPEAKER = "lt.speaker";
 
 const BG_TEMPLATES = [
   { id: "none",    label: "None",     bg: "linear-gradient(135deg, #140e0c 0%, #2b201b 100%)" },
@@ -42,7 +42,7 @@ export default function PreFlightPage({
   const [micOn, setMicOn] = useState(false);
   const [mirrored, setMirrored] = useState(false);
   const [bgTemplate, setBgTemplate] = useState("none");
-  const [echoEnabled, setEchoEnabled] = useState(false);
+  const [speakerOn, setSpeakerOn] = useState(true);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -52,10 +52,10 @@ export default function PreFlightPage({
     if (typeof window === "undefined") return;
     const savedName = window.sessionStorage.getItem(STORAGE_KEY_NAME);
     const savedLang = window.sessionStorage.getItem(STORAGE_KEY_LANG);
-    const savedEcho = window.sessionStorage.getItem(STORAGE_KEY_ECHO);
+    const savedSpeaker = window.sessionStorage.getItem(STORAGE_KEY_SPEAKER);
     if (savedName) setDisplayName(savedName);
     if (savedLang) setLang(savedLang);
-    if (savedEcho === "1") setEchoEnabled(true);
+    if (savedSpeaker !== null) setSpeakerOn(savedSpeaker === "1");
   }, []);
 
   // Cleanup camera on unmount
@@ -127,7 +127,7 @@ export default function PreFlightPage({
     streamRef.current = null;
     window.sessionStorage.setItem(STORAGE_KEY_NAME, displayName.trim());
     window.sessionStorage.setItem(STORAGE_KEY_LANG, lang);
-    window.sessionStorage.setItem(STORAGE_KEY_ECHO, echoEnabled ? "1" : "0");
+    window.sessionStorage.setItem(STORAGE_KEY_SPEAKER, speakerOn ? "1" : "0");
     router.push(`/session/${id}/room`);
   }
 
@@ -319,14 +319,14 @@ export default function PreFlightPage({
             </select>
           </div>
 
-          {/* Echo translation toggle */}
+          {/* Translation audio toggle (speaker icon) */}
           <div
-            className="prejoin-echo-toggle"
+            className="prejoin-speaker-toggle"
             role="switch"
-            aria-checked={echoEnabled}
+            aria-checked={speakerOn}
             tabIndex={0}
-            onClick={() => setEchoEnabled((v) => !v)}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEchoEnabled((v) => !v); } }}
+            onClick={() => setSpeakerOn((v) => !v)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSpeakerOn((v) => !v); } }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -342,13 +342,13 @@ export default function PreFlightPage({
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, flexShrink: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: speakerOn ? 1 : 0.35, flexShrink: 0 }}>
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
                 <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
                 <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
               </svg>
-              <span style={{ fontSize: 13, color: "var(--fg-secondary)" }}>
-                Hear my own speech in {PICKER_LANGUAGES.find((l) => l.code === lang)?.name.split("(")[0].trim() || "my language"}
+              <span style={{ fontSize: 13, color: speakerOn ? "var(--fg-primary)" : "var(--fg-tertiary)" }}>
+                Translation audio
               </span>
             </div>
             {/* Toggle switch */}
@@ -358,7 +358,7 @@ export default function PreFlightPage({
                 width: 36,
                 height: 20,
                 borderRadius: 10,
-                background: echoEnabled ? "#C5A880" : "rgba(255,255,255,0.12)",
+                background: speakerOn ? "#C5A880" : "rgba(255,255,255,0.12)",
                 transition: "background 0.2s",
                 flexShrink: 0,
               }}
@@ -367,7 +367,7 @@ export default function PreFlightPage({
                 style={{
                   position: "absolute",
                   top: 2,
-                  left: echoEnabled ? 18 : 2,
+                  left: speakerOn ? 18 : 2,
                   width: 16,
                   height: 16,
                   borderRadius: "50%",

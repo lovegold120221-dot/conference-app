@@ -61,10 +61,11 @@ export default function InCall({
   const [audioOutputId, setAudioOutputId] = useState<string>("");
   const [videoInputId, setVideoInputId] = useState<string>("");
 
-  // Read echo preference from sessionStorage (set in prejoin page)
-  const [echoEnabled] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.sessionStorage.getItem("lt.echo") === "1";
+  // Read translation audio preference from sessionStorage (set in prejoin page)
+  const [speakerOn] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const v = window.sessionStorage.getItem("lt.speaker");
+    return v === null || v === "1";
   });
 
   const myIdentity = localParticipant?.identity || "";
@@ -152,7 +153,7 @@ export default function InCall({
   }, [room, localParticipant]);
 
   const { status: txStatus, captions: txCaptions, addExternalCaption } =
-    useGeminiTranslation(lang, { echoTargetLanguage: echoEnabled });
+    useGeminiTranslation(lang, { playbackMuted: !speakerOn });
 
   const humanRemotes = useMemo(
     () => remotes.filter((p) => p.kind !== ParticipantKind.AGENT),

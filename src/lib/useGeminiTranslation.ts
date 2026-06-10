@@ -42,9 +42,9 @@ export interface UseGeminiTranslationResult {
  */
 export function useGeminiTranslation(
   targetLang: string,
-  options?: { echoTargetLanguage?: boolean },
+  options?: { playbackMuted?: boolean },
 ): UseGeminiTranslationResult {
-  const echoEnabled = options?.echoTargetLanguage ?? false;
+  const playbackMuted = options?.playbackMuted ?? false;
   const room = useRoomContext();
   const remoteParticipants = useRemoteParticipants();
 
@@ -59,8 +59,8 @@ export function useGeminiTranslation(
   const pipelineRef = useRef<AudioPipeline | null>(null);
   const langRef = useRef(targetLang);
   langRef.current = targetLang;
-  const echoRef = useRef(echoEnabled);
-  echoRef.current = echoEnabled;
+  const mutedRef = useRef(playbackMuted);
+  mutedRef.current = playbackMuted;
 
   // ── Connect / reconnect when targetLang changes ──
   useEffect(() => {
@@ -95,7 +95,9 @@ export function useGeminiTranslation(
         // 3. Create the Gemini client.
         const client = new GeminiLiveClient({
           onAudio: (pcm, sampleRate) => {
-            pipeline.playTranslatedAudio(pcm, sampleRate);
+            if (!mutedRef.current) {
+              pipeline.playTranslatedAudio(pcm, sampleRate);
+            }
           },
           onTranscript: (text, final) => {
             const entry: CaptionEntry = {
@@ -116,7 +118,7 @@ export function useGeminiTranslation(
         clientRef.current = client;
 
         // 4. Connect to Gemini Live API.
-        await client.connect(apiKey, targetLang, echoRef.current);
+        await client.connect(apiKey, targetLang);
 
         // 5. Start the pipeline (this begins PCM capture).
         await pipeline.start((pcm) => {
