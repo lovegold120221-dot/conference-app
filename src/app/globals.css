@@ -864,6 +864,30 @@ body {
   font-size: 11px; color: var(--fg-tertiary);
 }
 
+/* ── AUDIO VISUALIZER ── */
+
+.self-view-visualizer {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  z-index: 2;
+  background: rgba(20, 14, 12, 0.65);
+  border-radius: 6px;
+  padding: 3px 5px;
+  backdrop-filter: blur(4px);
+}
+.audio-visualizer {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+.audio-visualizer-bar {
+  border-radius: 2px 2px 0 0;
+  transition: height 80ms ease, opacity 200ms ease;
+  transform-origin: bottom;
+  min-height: 2px;
+}
+
 /* ── PARTICIPANT TILES ── */
 
 .tile {
@@ -1162,3 +1186,233 @@ body {
 }
 .device-select:focus { border-color: var(--accent); }
 .device-select option { background: #2b201b; color: #fff; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — native look and feel on small screens
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  /* ── Safe area for notch phones ── */
+  .prejoin, .meeting, .page {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* ── ENTRY PAGE ── */
+  .display-xl {
+    font-size: 28px;
+    line-height: 1.2;
+  }
+  .display-lg {
+    font-size: 22px;
+    line-height: 1.3;
+  }
+  .container {
+    max-width: 100%;
+    padding: 24px 20px;
+  }
+
+  /* ── PREJOIN PAGE ── */
+  .prejoin-main {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .prejoin-preview {
+    flex: none;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+  .prejoin-avatar-placeholder {
+    font-size: 36px;
+    width: 72px;
+    height: 72px;
+  }
+  .prejoin-settings {
+    flex: none;
+    width: 100%;
+    padding: 0;
+  }
+  .prejoin-title {
+    font-size: 18px;
+  }
+  .prejoin-subtitle {
+    font-size: 12px;
+  }
+  .prejoin-device-dock {
+    gap: 6px;
+    padding: 4px 8px;
+  }
+  .prejoin-bg-templates {
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .prejoin-bg-templates::-webkit-scrollbar { display: none; }
+  .prejoin-bg-thumb {
+    min-width: 48px;
+    height: 48px;
+  }
+  .prejoin-bg-thumb-swatch { width: 28px; height: 28px; }
+
+  /* ── IN-CALL PAGE ── */
+  .meeting {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+    grid-template-areas: "stage" "controls";
+  }
+
+  /* Sidebars → full-screen overlays with slide-in */
+  .sidebar-left, .sidebar-right {
+    position: fixed;
+    top: 0; bottom: 0;
+    z-index: 100;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 0;
+    margin: 0;
+    transform: translateX(0);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sidebar-left.hidden {
+    transform: translateX(-100%);
+  }
+  .sidebar-left {
+    left: 0;
+    border-right: none;
+  }
+  .sidebar-right {
+    right: 0;
+  }
+  .sidebar-right.hidden {
+    transform: translateX(100%);
+  }
+  .sidebar-right .sidebar-close {
+    display: flex;
+  }
+
+  /* Stage fills the available height */
+  .stage {
+    grid-area: stage;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .stage-header {
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .stage-pip {
+    width: 80px;
+  }
+  .stage-pip-video {
+    height: 52px;
+    border-radius: 8px;
+  }
+  .stage-pip-avatar {
+    font-size: 14px;
+    width: 28px; height: 28px;
+  }
+  .stage-pip-footer { display: none; }
+  .stage-meta { flex-wrap: wrap; gap: 4px; }
+  .stage-room-name { display: none; }
+  .stage-brand-text { font-size: 14px; }
+  .stage-e2ee-text { display: none; }
+
+  /* Control bar → compact bottom dock */
+  .control-bar {
+    grid-area: controls;
+    position: static;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    transform: none;
+    border-radius: 0;
+    padding: 8px 12px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--border);
+    background: rgba(20, 14, 12, 0.98);
+  }
+  .control-bar-inner { gap: 6px; }
+  .control-btn { width: 40px; height: 40px; min-width: unset; }
+  .control-btn svg { width: 18px; height: 18px; }
+  .control-leave-btn { width: 40px; height: 40px; font-size: 0; }
+  .control-leave-btn svg { width: 18px; height: 18px; }
+  .control-label { display: none; }
+
+  /* Video grid → vertical scrolling for mobile */
+  .stage-video-grid {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px;
+  }
+  .video-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .video-grid-2 { grid-template-columns: 1fr; }
+  .video-grid-3 { grid-template-columns: 1fr; }
+  .video-grid-4 { grid-template-columns: 1fr 1fr; }
+  .video-grid-5,
+  .video-grid-6,
+  .video-grid-7,
+  .video-grid-8 { grid-template-columns: 1fr 1fr; }
+  .tile { aspect-ratio: 4 / 3; }
+
+  /* Self-view → smaller, bottom-left */
+  .self-view {
+    width: 90px;
+    bottom: 12px;
+    right: 12px;
+    border-radius: 10px;
+  }
+
+  /* Captions panel */
+  .captions-panel { max-height: 40vh; }
+  .sidebar-panel { max-height: calc(100vh - 50px); }
+
+  /* Device selector overlay */
+  .device-selector-overlay {
+    align-items: flex-end;
+  }
+  .device-selector {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    max-height: 70vh;
+    margin: 0;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ── Extra small phones ── */
+@media (max-width: 380px) {
+  .display-xl { font-size: 22px; }
+  .prejoin-header { padding: 12px 16px; }
+  .prejoin-device-btn { width: 36px; height: 36px; }
+  .prejoin-device-btn svg { width: 16px; height: 16px; }
+  .prejoin-enter-btn { font-size: 13px; padding: 12px; }
+  .control-btn { width: 36px; height: 36px; }
+  .video-grid-4,
+  .video-grid-5,
+  .video-grid-6,
+  .video-grid-7,
+  .video-grid-8 { grid-template-columns: 1fr; }
+}
+
+/* ── Tablet adjustments ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .prejoin-main {
+    gap: 20px;
+    padding: 0 16px;
+  }
+  .prejoin-preview { max-width: 320px; }
+  .sidebar-left { width: 300px; }
+  .sidebar-right { width: 240px; }
+  .stage-pip { width: 120px; }
+  .self-view { width: 130px; }
+  .video-grid-7,
+  .video-grid-8 { grid-template-columns: 1fr 1fr 1fr; }
+}

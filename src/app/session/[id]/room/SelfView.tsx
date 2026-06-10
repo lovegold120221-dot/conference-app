@@ -3,8 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocalParticipant } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import AudioVisualizer from "./AudioVisualizer";
 
-export default function SelfView() {
+/**
+ * Self-view PIP shown in the stage header.
+ *
+ * @param micStream  The local microphone MediaStream (for the audio visualizer).
+ *                   Pass null/undefined when the mic is off.
+ */
+export default function SelfView({
+  micStream,
+}: {
+  micStream?: MediaStream | null;
+}) {
   const { localParticipant, cameraTrack } = useLocalParticipant();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
@@ -45,6 +56,15 @@ export default function SelfView() {
           <span>{displayName}</span>
         </div>
       )}
+      {/* Mic audio visualizer overlay */}
+      <div className="self-view-visualizer">
+        <AudioVisualizer
+          stream={micStream ?? undefined}
+          barCount={4}
+          height={16}
+          width={24}
+        />
+      </div>
     </div>
   );
 }

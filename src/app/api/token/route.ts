@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  AccessToken,
-  RoomConfiguration,
-  RoomAgentDispatch,
-} from "livekit-server-sdk";
+import { AccessToken, RoomConfiguration } from "livekit-server-sdk";
 import { TrackSource } from "@livekit/protocol";
 
 // Session caps (mirrors src/lib/config.ts on the client). Hardcoded here to
@@ -12,10 +8,6 @@ const SESSION_TTL_SECONDS = 4 * 60 * 60; // 4h hard cap per grill Q21
 const EMPTY_ROOM_TIMEOUT = 60; // close empty rooms after 60s
 const DEPARTURE_TIMEOUT = 30; // close after last person leaves
 const MAX_PARTICIPANTS = 8; // room cap per grill Q21
-// Must match agent_name in translator/src/agent.py. Using "gemini-translator"
-// instead of the generic "translator" to avoid colliding with stale Cloud
-// Agents that may already be registered under "translator".
-const TRANSLATOR_AGENT_NAME = "gemini-translator";
 
 export async function GET(req: NextRequest) {
   const room = req.nextUrl.searchParams.get("room");
@@ -75,14 +67,9 @@ export async function GET(req: NextRequest) {
 
   at.addGrant(grant);
 
-  // Dispatch the Python translator agent when the room is created.
+  // Room lifecycle config — no agent dispatch needed (translation runs
+  // client-side via each browser's own Gemini Live session).
   at.roomConfig = new RoomConfiguration({
-    agents: [
-      new RoomAgentDispatch({
-        agentName: TRANSLATOR_AGENT_NAME,
-        metadata: JSON.stringify({ sessionId: room }),
-      }),
-    ],
     emptyTimeout: EMPTY_ROOM_TIMEOUT,
     departureTimeout: DEPARTURE_TIMEOUT,
     maxParticipants: MAX_PARTICIPANTS,

@@ -3,6 +3,7 @@
 import { use, useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { PICKER_LANGUAGES } from "@/lib/languages";
+import AudioVisualizer from "./room/AudioVisualizer";
 
 const STORAGE_KEY_NAME = "lt.displayName";
 const STORAGE_KEY_LANG = "lt.lang";
@@ -43,6 +44,7 @@ export default function PreFlightPage({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -93,20 +95,21 @@ export default function PreFlightPage({
 
   const toggleMic = useCallback(async () => {
     if (micOn) {
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
       streamRef.current?.getTracks().filter((t) => t.kind === "audio").forEach((t) => t.stop());
       setMicOn(false);
     } else {
       try {
-        // If camera already on, add audio to existing stream
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micStreamRef.current = audioStream;
+        // If camera already on, also add audio to the video stream
         if (streamRef.current) {
-          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
           audioStream.getAudioTracks().forEach((t) => streamRef.current!.addTrack(t));
-          setMicOn(true);
         } else {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          streamRef.current = stream;
-          setMicOn(true);
+          streamRef.current = audioStream;
         }
+        setMicOn(true);
       } catch {
         // permission denied
       }
@@ -242,6 +245,7 @@ export default function PreFlightPage({
                 <line x1="8" y1="23" x2="16" y2="23" />
               </svg>
             </button>
+            <AudioVisualizer stream={micOn ? micStreamRef.current : null} />
             <button
               className={`prejoin-device-btn${cameraOn ? " active" : ""}`}
               onClick={toggleCamera}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRemoteParticipants, useRoomContext } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 import { getLanguageByCode } from "@/lib/languages";
+import type { CaptionEntry } from "@/lib/useGeminiTranslation";
 
 interface TranscriptData {
   type: string;
@@ -126,11 +127,13 @@ export default function ChatSidebar({
   onClose,
   myLang,
   peerLangs,
+  hookCaptions,
 }: {
   open: boolean;
   onClose: () => void;
   myLang: string;
   peerLangs: Map<string, string | undefined>;
+  hookCaptions?: CaptionEntry[];
 }) {
   const room = useRoomContext();
   const remotes = useRemoteParticipants();
@@ -311,35 +314,54 @@ export default function ChatSidebar({
         {/* ── Captions Panel ── */}
         <div className={`sidebar-panel${activeTab === "captions" ? "" : " hidden"}`}>
           <div ref={bodyRef} className="captions-panel">
-            {entries.length === 0 ? (
+            {entries.length === 0 && (!hookCaptions || hookCaptions.length === 0) ? (
               <div className="captions-empty">
                 No captions yet. Translation transcripts will appear here as people speak.
               </div>
             ) : (
-              entries.map((entry) => (
-                <div className="captions-entry" key={entry.id}>
-                  <div className="captions-entry-top">
-                    <div className="captions-speaker">
-                      <span className="captions-speaker-name">
-                        {names.get(entry.sourceIdentity) ?? entry.sourceIdentity}
-                      </span>
-                      {entry.sourceLang && (
-                        <span className="captions-speaker-lang">
-                          {entry.sourceLang} {myLangInfo?.flag && `· ${myLangInfo.flag}`}
-                        </span>
-                      )}
+              <>
+                {/* Hook captions (client-side Gemini translations) */}
+                {hookCaptions?.map((entry) => (
+                  <div className="captions-entry" key={entry.id}>
+                    <div className="captions-entry-top">
+                      <div className="captions-speaker">
+                        <span className="captions-speaker-name">Translation</span>
+                        {myLangInfo?.flag && (
+                          <span className="captions-speaker-lang">
+                            {myLangInfo.flag}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <button
-                      className={`captions-speak-btn${speakingKey === entry.id ? " speaking" : ""}`}
-                      onClick={() => handleSpeak(entry.id, entry.text)}
-                      aria-label={speakingKey === entry.id ? "Stop" : "Read aloud"}
-                    >
-                      <SpeakerSmallIcon />
-                    </button>
+                    <p className="captions-text">{entry.text}</p>
                   </div>
-                  <p className="captions-text">{entry.text}</p>
-                </div>
-              ))
+                ))}
+                {/* Data-channel captions (agent / dictionary) */}
+                {entries.map((entry) => (
+                  <div className="captions-entry" key={entry.id}>
+                    <div className="captions-entry-top">
+                      <div className="captions-speaker">
+                        <span className="captions-speaker-name">
+                          {names.get(entry.sourceIdentity) ?? entry.sourceIdentity}
+                        </span>
+                        {entry.sourceLang && (
+                          <span className="captions-speaker-lang">
+                            {entry.sourceLang} {myLangInfo?.flag && `· ${myLangInfo.flag}`}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        className={`captions-speak-btn${speakingKey === entry.id ? " speaking" : ""}`}
+                        onClick={() => handleSpeak(entry.id, entry.text)}
+                        aria-label={speakingKey === entry.id ? "Stop" : "Read aloud"}
+                      >
+                        <SpeakerSmallIcon />
+                      </button>
+                    </div>
+                    <p className="captions-text">{entry.text}</p>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         </div>

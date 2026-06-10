@@ -6,10 +6,10 @@ import {
   useRemoteParticipants,
   useRoomContext,
 } from "@livekit/components-react";
-import { ConnectionState, ParticipantKind, RoomEvent } from "livekit-client";
+import { ConnectionState, ParticipantKind, RoomEvent, Track } from "livekit-client";
 import { PARTICIPANT_LANG_ATTR } from "@/lib/config";
 import { getLanguageByCode } from "@/lib/languages";
-import { useTranslationRouting } from "./useTranslationRouting";
+import { useGeminiTranslation } from "@/lib/useGeminiTranslation";
 import VideoGrid from "./VideoGrid";
 import type { ViewMode } from "./VideoGrid";
 import SelfView from "./SelfView";
@@ -63,6 +63,40 @@ export default function InCall({
 
   const myIdentity = localParticipant?.identity || "";
 
+  // Track the local mic MediaStream for the audio visualizer
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    if (!localParticipant) { setMicStream(null); return; }
+    const pub = localParticipant.getTrackPublication(Track.Source.Microphone);
+    const track = pub?.track;
+    if (track && !pub?.isMuted && track.mediaStream) {
+      setMicStream(track.mediaStream);
+    } else {
+      setMicStream(null);
+    }
+    // Listen for changes
+    const update = () => {
+      const p = localParticipant.getTrackPublication(Track.Source.Microphone);
+      const t = p?.track;
+      if (t && !p?.isMuted && t.mediaStream) {
+        setMicStream(t.mediaStream);
+      } else {
+        setMicStream(null);
+      }
+    };
+    localParticipant.on("trackPublished", update);
+    localParticipant.on("trackUnpublished", update);
+    localParticipant.audioTrackPublications.forEach((pub) => {
+      pub.on("muted", update);
+      pub.on("unmuted", update);
+    });
+    return () => {
+      localParticipant.off("trackPublished", update);
+      localParticipant.off("trackUnpublished", update);
+    };
+  }, [localParticipant]);
+
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
@@ -111,7 +145,8 @@ export default function InCall({
     return () => { room.off(RoomEvent.ParticipantMetadataChanged, handler); };
   }, [room, localParticipant]);
 
-  useTranslationRouting(lang);
+  const { status: txStatus, captions: txCaptions, addExternalCaption } =
+    useGeminiTranslation(lang);
 
   const humanRemotes = useMemo(
     () => remotes.filter((p) => p.kind !== ParticipantKind.AGENT),
@@ -188,6 +223,7 @@ export default function InCall({
         onClose={() => setCaptionsOpen(false)}
         myLang={lang}
         peerLangs={peerLangs}
+        hookCaptions={txCaptions}
       />
 
       {/* ── CENTER STAGE ── */}
@@ -260,7 +296,7 @@ export default function InCall({
               />
             </div>
           )}
-          <SelfView />
+          <SelfView micStream={micStream} />
         </div>
 
         {/* Control Dock */}

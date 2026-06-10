@@ -12,3 +12,8 @@ export const NATIVE_LANG = "none";
 
 // Participant attribute carrying each participant's chosen language.
 export const PARTICIPANT_LANG_ATTR = "lang";
+
+// Languages that use dictionary-based translation (phrasebook) rather than
+// Gemini Live API. These are low-resource languages the Gemini model
+// doesn't support natively.
+export const DICTIONARY_LANGS = new Set(["byv"]);
