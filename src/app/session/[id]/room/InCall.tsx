@@ -61,12 +61,21 @@ export default function InCall({
   const [audioOutputId, setAudioOutputId] = useState<string>("");
   const [videoInputId, setVideoInputId] = useState<string>("");
 
-  // Read translation audio preference from sessionStorage (set in prejoin page)
-  const [speakerOn] = useState(() => {
+  // Translation audio toggle (live, persisted to sessionStorage)
+  const [speakerOn, setSpeakerOn] = useState(() => {
     if (typeof window === "undefined") return true;
     const v = window.sessionStorage.getItem("lt.speaker");
     return v === null || v === "1";
   });
+
+  const toggleSpeaker = useCallback(() => {
+    setSpeakerOn((prev) => {
+      const next = !prev;
+      try { window.sessionStorage.setItem("lt.speaker", next ? "1" : "0"); }
+      catch { /* noop */ }
+      return next;
+    });
+  }, []);
 
   const myIdentity = localParticipant?.identity || "";
 
@@ -317,6 +326,8 @@ export default function InCall({
           onToggleParticipantList={() => setParticipantListOpen((v) => !v)}
           deviceSelectorOpen={deviceSelectorOpen}
           onToggleDeviceSelector={() => setDeviceSelectorOpen((v) => !v)}
+          speakerOn={speakerOn}
+          onToggleSpeaker={toggleSpeaker}
         />
       </main>
 

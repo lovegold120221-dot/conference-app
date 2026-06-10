@@ -15,6 +15,8 @@ import {
   SpeakerViewIcon,
   CaptionsIcon,
   PeopleIcon,
+  SpeakerIcon,
+  SpeakerOffIcon,
 } from "./icons";
 
 function HandIcon() {
@@ -115,6 +117,8 @@ export default function ControlBar({
   onToggleParticipantList,
   deviceSelectorOpen,
   onToggleDeviceSelector,
+  speakerOn,
+  onToggleSpeaker,
 }: {
   onLeave: () => void;
   captionsOpen: boolean;
@@ -125,6 +129,8 @@ export default function ControlBar({
   onToggleParticipantList: () => void;
   deviceSelectorOpen: boolean;
   onToggleDeviceSelector: () => void;
+  speakerOn: boolean;
+  onToggleSpeaker: () => void;
 }) {
   const { localParticipant, microphoneTrack, cameraTrack } = useLocalParticipant();
   const room = useRoomContext();
@@ -260,6 +266,15 @@ export default function ControlBar({
           title="Captions"
         >
           <CaptionsIcon />
+        </button>
+
+        {/* Translation audio toggle (speaker) */}
+        <button
+          className={`dock-btn${speakerOn ? " active" : ""}`}
+          onClick={onToggleSpeaker}
+          title={speakerOn ? "Translation audio on" : "Translation audio off"}
+        >
+          {speakerOn ? <SpeakerIcon /> : <SpeakerOffIcon />}
         </button>
 
         {/* Participants toggle */}
