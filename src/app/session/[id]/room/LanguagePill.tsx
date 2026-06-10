@@ -14,7 +14,7 @@ export default function LanguagePill({
 
   return (
     <label className="lang-pill">
-      <span className="lang-pill-prefix">Lang</span>
+      <span className="lang-pill-prefix">Hear</span>
       <span className="lang-pill-flag" aria-hidden>
         {current?.flag ?? "🌐"}
       </span>

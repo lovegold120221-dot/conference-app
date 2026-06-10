@@ -260,8 +260,8 @@ export default function PreFlightPage({
         <div className="prejoin-settings">
           <h1 className="prejoin-title">Join the call</h1>
           <p className="prejoin-subtitle">
-            Pick your language &mdash; that&rsquo;s what you&rsquo;ll speak and
-            what you&rsquo;ll hear everyone else in.
+            Pick the language you want to hear &mdash; everyone else&rsquo;s
+            speech gets translated into it live.
           </p>
 
           <div className="prejoin-field">
@@ -293,7 +293,7 @@ export default function PreFlightPage({
                   <line x1="2" y1="12" x2="22" y2="12" />
                   <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                 </svg>
-                Language
+                I listen in
               </span>
             </label>
             <select
