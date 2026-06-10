@@ -146,6 +146,7 @@ body {
 
 .prejoin-preview-body {
   flex: 1; display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 2;
 }
 
 .prejoin-avatar-placeholder {
@@ -177,6 +178,79 @@ body {
 }
 .prejoin-device-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
 .prejoin-device-btn.active { color: var(--accent); }
+
+/* ── Preview background layer (for BG templates) ── */
+.prejoin-preview-bg {
+  position: absolute; inset: 0;
+  transition: background 0.5s ease;
+  z-index: 1;
+}
+.prejoin-preview-bg-blur {
+  backdrop-filter: blur(24px) saturate(0.6);
+  -webkit-backdrop-filter: blur(24px) saturate(0.6);
+  background: rgba(20, 14, 12, 0.5);
+}
+
+/* ── Mirror camera toggle ── */
+.prejoin-mirror-btn {
+  position: absolute; top: 12px; left: 12px;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(20, 14, 12, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  color: #e7e5e4;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 20;
+  transition: all 0.2s;
+}
+.prejoin-mirror-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+.prejoin-mirror-btn.active { color: var(--accent); border-color: var(--accent); }
+
+/* ── BG Templates row ── */
+.prejoin-bg-templates {
+  position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px; z-index: 15;
+  background: rgba(20, 14, 12, 0.8);
+  backdrop-filter: blur(24px);
+  padding: 8px 12px; border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+.prejoin-bg-thumb {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: none; border: 2px solid transparent;
+  cursor: pointer; padding: 0; border-radius: 8px;
+  transition: all 0.2s;
+  width: 44px;
+}
+.prejoin-bg-thumb:hover { border-color: rgba(255,255,255,0.3); }
+.prejoin-bg-thumb.active { border-color: var(--accent); }
+.prejoin-bg-thumb-swatch {
+  display: block; width: 32px; height: 24px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  position: relative; overflow: hidden;
+}
+.prejoin-bg-thumb-blur-overlay {
+  position: absolute; inset: 0;
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.prejoin-bg-thumb-label {
+  font-size: 8px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: #a8a29e; font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── Video preview element ── */
+.prejoin-video-mirrored {
+  transform: scaleX(-1);
+}
+
+/* ── Ensure video fills preview ── */
+.prejoin-preview-body video {
+  width: 100%; height: 100%; object-fit: cover;
+}
 
 .prejoin-settings { max-width: 400px; }
 
