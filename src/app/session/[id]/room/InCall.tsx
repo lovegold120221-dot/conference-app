@@ -10,7 +10,6 @@ import { ConnectionState, ParticipantKind, RoomEvent } from "livekit-client";
 import { PARTICIPANT_LANG_ATTR } from "@/lib/config";
 import { getLanguageByCode } from "@/lib/languages";
 import { useTranslationRouting } from "./useTranslationRouting";
-import { useRoomAdmin } from "./useRoomAdmin";
 import VideoGrid from "./VideoGrid";
 import type { ViewMode } from "./VideoGrid";
 import SelfView from "./SelfView";
@@ -57,14 +56,12 @@ export default function InCall({
   const [participantListOpen, setParticipantListOpen] = useState(false);
   const [deviceSelectorOpen, setDeviceSelectorOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [isLocked, setIsLocked] = useState(false);
   const [isHost, setIsHost] = useState(initialIsHost);
   const [audioInputId, setAudioInputId] = useState<string>("");
   const [audioOutputId, setAudioOutputId] = useState<string>("");
   const [videoInputId, setVideoInputId] = useState<string>("");
 
   const myIdentity = localParticipant?.identity || "";
-  const admin = useRoomAdmin(room.name, myIdentity);
 
   // Recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -114,24 +111,6 @@ export default function InCall({
     return () => { room.off(RoomEvent.ParticipantMetadataChanged, handler); };
   }, [room, localParticipant]);
 
-  // Detect room lock
-  useEffect(() => {
-    if (!room) return;
-    const checkLock = () => {
-      try {
-        const meta = room.metadata;
-        if (meta) {
-          const parsed = JSON.parse(meta);
-          setIsLocked(!!parsed.locked);
-        }
-      } catch {}
-    };
-    checkLock();
-    const handler = () => checkLock();
-    room.on(RoomEvent.RoomMetadataChanged, handler);
-    return () => { room.off(RoomEvent.RoomMetadataChanged, handler); };
-  }, [room]);
-
   useTranslationRouting(lang);
 
   const humanRemotes = useMemo(
@@ -175,16 +154,6 @@ export default function InCall({
 
   const recMins = Math.floor(recordSeconds / 60).toString().padStart(2, "0");
   const recSecs = (recordSeconds % 60).toString().padStart(2, "0");
-
-  // Admin actions
-  const toggleLock = useCallback(async () => {
-    const res = isLocked ? await admin.unlock() : await admin.lock();
-    if (res.ok) setIsLocked(!isLocked);
-  }, [isLocked, admin]);
-
-  const handleMuteAll = useCallback(async () => {
-    await admin.muteAll();
-  }, [admin]);
 
   const handleAudioInputChange = useCallback((deviceId: string) => {
     setAudioInputId(deviceId);
@@ -238,6 +207,7 @@ export default function InCall({
               <span className="stage-room-name">
                 {room.name.replace(/-/g, " ")}
               </span>
+              <LanguagePill value={lang} onChange={setLang} />
               <div className="stage-e2ee-badge" title="End-to-End Encrypted">
                 <span className="stage-e2ee-icon"><ShieldCheckIcon /></span>
                 <span className="stage-e2ee-text">E2EE</span>
@@ -296,7 +266,6 @@ export default function InCall({
         {/* Control Dock */}
         <ControlBar
           onLeave={onLeave}
-          inviteUrl={inviteUrl}
           captionsOpen={captionsOpen}
           onToggleCaptions={() => setCaptionsOpen((v) => !v)}
           viewMode={viewMode}
@@ -305,10 +274,6 @@ export default function InCall({
           onToggleParticipantList={() => setParticipantListOpen((v) => !v)}
           deviceSelectorOpen={deviceSelectorOpen}
           onToggleDeviceSelector={() => setDeviceSelectorOpen((v) => !v)}
-          isHost={isHost}
-          isLocked={isLocked}
-          onToggleLock={toggleLock}
-          onMuteAll={handleMuteAll}
         />
       </main>
 

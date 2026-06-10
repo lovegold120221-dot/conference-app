@@ -9,7 +9,6 @@ export default function Home() {
 
   function createSession() {
     setLoading(true);
-    // Mark this user as the host
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem("lt.isHost", "true");
     }
@@ -20,20 +19,60 @@ export default function Home() {
   return (
     <div className="page">
       <div className="container" style={{ textAlign: "center" }}>
+        {/* Logo */}
+        <div className="enter" style={{ marginBottom: 24 }}>
+          <div
+            style={{
+              position: "relative",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              border: "1px solid var(--border-strong)",
+              background: "rgba(43,32,27,0.5)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: "1px dashed var(--accent)",
+                animation: "spin 20s linear infinite",
+              }}
+            />
+            <div
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "var(--accent)",
+              }}
+            />
+          </div>
+        </div>
+
         {/* Eyebrow */}
-        <p className="mono enter" style={{ marginBottom: 20, color: "var(--fg-tertiary)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+        <p
+          className="mono enter-d1"
+          style={{ marginBottom: 12, fontSize: 11, letterSpacing: "0.12em" }}
+        >
           Powered by Eburon AI
         </p>
 
         {/* Title */}
-        <h1 className="display display-xl enter-d1" style={{ marginBottom: 20 }}>
+        <h1 className="display display-xl enter-d2" style={{ marginBottom: 16 }}>
           Orbit Conference
         </h1>
 
         {/* Subtitle */}
         <p
           className="body enter-d2"
-          style={{ maxWidth: 360, margin: "0 auto 40px" }}
+          style={{ maxWidth: 360, margin: "0 auto 36px", fontSize: 15 }}
         >
           Multi-language video conferencing with real-time AI translation.
           Everyone speaks their language, everyone hears theirs.
@@ -46,11 +85,11 @@ export default function Home() {
             onClick={createSession}
             disabled={loading}
             id="create-session-btn"
-            style={{ padding: "16px 40px", fontSize: 15, borderRadius: 14 }}
+            style={{ padding: "16px 44px", fontSize: 14 }}
           >
             {loading ? (
               <>
-                <span className="spinner" /> Creating…
+                <span className="spinner" /> Creating&hellip;
               </>
             ) : (
               "Start a conference"
@@ -62,7 +101,7 @@ export default function Home() {
         <div
           className="enter-d4"
           style={{
-            marginTop: 80,
+            marginTop: 64,
             display: "flex",
             flexDirection: "column",
             gap: 0,
@@ -73,7 +112,10 @@ export default function Home() {
           {[
             { step: "01", text: "Pick your language and turn on your camera" },
             { step: "02", text: "Share the link with everyone joining the call" },
-            { step: "03", text: "Each language pair spins up one AI translation session on demand" },
+            {
+              step: "03",
+              text: "Each language pair spins up one AI translation session on demand",
+            },
           ].map((item, i) => (
             <div key={i}>
               <div
@@ -115,7 +157,10 @@ export default function Home() {
         </div>
 
         {/* Footer */}
-        <p className="mono enter-d4" style={{ marginTop: 48, fontSize: 11, letterSpacing: "0.06em" }}>
+        <p
+          className="mono"
+          style={{ marginTop: 48, fontSize: 11, letterSpacing: "0.06em" }}
+        >
           Orbit Conference by Eburon AI
         </p>
       </div>

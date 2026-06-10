@@ -2,22 +2,18 @@
 
 import { useState } from "react";
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
-import { Track, createLocalTracks } from "livekit-client";
+import { Track } from "livekit-client";
 import {
   MicOnIcon,
   MicOffIcon,
   CamOnIcon,
   CamOffIcon,
-  ScreenShareIcon,
   ScreenShareOffIcon,
   LeaveIcon,
   GridViewIcon,
   SpeakerViewIcon,
   CaptionsIcon,
   PeopleIcon,
-  LockIcon,
-  LockOpenIcon,
-  SettingsIcon,
 } from "./icons";
 
 function HandIcon() {
@@ -110,7 +106,6 @@ function SettingsGearIcon() {
 
 export default function ControlBar({
   onLeave,
-  inviteUrl,
   captionsOpen,
   onToggleCaptions,
   viewMode,
@@ -119,13 +114,8 @@ export default function ControlBar({
   onToggleParticipantList,
   deviceSelectorOpen,
   onToggleDeviceSelector,
-  isHost,
-  isLocked,
-  onToggleLock,
-  onMuteAll,
 }: {
   onLeave: () => void;
-  inviteUrl: string;
   captionsOpen: boolean;
   onToggleCaptions: () => void;
   viewMode: "grid" | "speaker";
@@ -134,10 +124,6 @@ export default function ControlBar({
   onToggleParticipantList: () => void;
   deviceSelectorOpen: boolean;
   onToggleDeviceSelector: () => void;
-  isHost: boolean;
-  isLocked: boolean;
-  onToggleLock: () => void;
-  onMuteAll: () => void;
 }) {
   const { localParticipant, microphoneTrack, cameraTrack } = useLocalParticipant();
   const room = useRoomContext();
@@ -195,8 +181,6 @@ export default function ControlBar({
       setRecordInterval(interval);
     }
   }
-
-  const hasMultiple = room.remoteParticipants.size > 0;
 
   return (
     <footer className="control-dock">
