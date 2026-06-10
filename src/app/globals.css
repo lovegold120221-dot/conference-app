@@ -699,6 +699,53 @@ body {
   .stage-room-name { font-size:10px; padding:4px 8px; }
 }
 
+/* ── ENTRY PAGE (landing) MOBILE ── */
+@media(max-width:768px){
+  .page { padding: 16px; }
+  .display-xl { font-size: 36px; line-height: 1.15; }
+  .display-lg { font-size: 28px; line-height: 1.2; }
+  .display-md { font-size: 22px; line-height: 1.25; }
+  .body { font-size: 15px; line-height: 1.55; }
+  .btn { padding: 16px 28px; font-size: 14px; min-height: 48px; }
+  .enter > div:first-child { width: 56px; height: 56px; }
+  .enter > div:first-child > div:first-child { width: 40px; height: 40px; }
+}
+
+/* ── PREJOIN MOBILE: device dock, icons, touch targets ── */
+@media(max-width:768px){
+  .prejoin-device-dock { bottom: 16px; padding: 12px; gap: 16px; }
+  .prejoin-device-btn { width: 48px; height: 48px; }
+  .prejoin-device-btn svg { width: 20px; height: 20px; }
+  .prejoin-bg-templates { bottom: 90px; padding: 10px 16px; gap: 12px; }
+  .prejoin-bg-thumb { width: 52px; }
+  .prejoin-bg-thumb-swatch { width: 40px; height: 30px; }
+  .prejoin-bg-thumb-label { font-size: 9px; }
+  .prejoin-mirror-btn { width: 40px; height: 40px; }
+  .prejoin-preview-badge { font-size: 9px; padding: 6px 10px; }
+}
+
+@media(max-width:480px){
+  .prejoin-device-dock { gap: 12px; padding: 10px; }
+  .prejoin-device-btn { width: 44px; height: 44px; }
+  .prejoin-device-btn svg { width: 18px; height: 18px; }
+  .prejoin-bg-templates { bottom: 80px; gap: 8px; }
+  .prejoin-bg-thumb { width: 48px; }
+  .prejoin-bg-thumb-swatch { width: 36px; height: 26px; }
+  .prejoin-mirror-btn { width: 36px; height: 36px; }
+  .prejoin-preview { border-radius: 12px; }
+  .prejoin-enter-btn { padding: 18px; font-size: 14px; }
+}
+
+/* ── SAFE AREA INSETS for notched devices ── */
+@supports (padding: max(0px)) {
+  @media(max-width:768px){
+    .page { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+    .prejoin-main { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+    .control-dock { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+    .prejoin-device-dock { bottom: max(16px, env(safe-area-inset-bottom)); }
+  }
+}
+
 /* ── PAGE UTILITY CLASSES ── */
 
 .page {
