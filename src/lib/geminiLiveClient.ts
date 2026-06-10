@@ -58,8 +58,13 @@ export class GeminiLiveClient {
    * Open a Gemini Live session configured for the given target language.
    * Resolves once the `setupComplete` handshake is received.
    */
-  connect(apiKey: string, targetLang: string): Promise<void> {
+  connect(
+    apiKey: string,
+    targetLang: string,
+    echoTargetLanguage = false,
+  ): Promise<void> {
     this.targetLang = targetLang;
+    this.echoTargetLanguage = echoTargetLanguage;
     this.closed = false;
     this.setupComplete = false;
     this.callbacks.onStatusChange("connecting");
@@ -158,6 +163,8 @@ export class GeminiLiveClient {
 
   // ── Internal ─────────────────────────────────────────────────────
 
+  private echoTargetLanguage = false;
+
   private sendSetup(): void {
     const payload = {
       setup: {
@@ -167,7 +174,7 @@ export class GeminiLiveClient {
           responseModalities: ["AUDIO"],
           translationConfig: {
             targetLanguageCode: this.targetLang,
-            echoTargetLanguage: false,
+            echoTargetLanguage: this.echoTargetLanguage,
           },
         },
         realtimeInputConfig: {

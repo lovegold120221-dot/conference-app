@@ -7,6 +7,7 @@ import AudioVisualizer from "./room/AudioVisualizer";
 
 const STORAGE_KEY_NAME = "lt.displayName";
 const STORAGE_KEY_LANG = "lt.lang";
+const STORAGE_KEY_ECHO = "lt.echo";
 
 const BG_TEMPLATES = [
   { id: "none",    label: "None",     bg: "linear-gradient(135deg, #140e0c 0%, #2b201b 100%)" },
@@ -41,6 +42,7 @@ export default function PreFlightPage({
   const [micOn, setMicOn] = useState(false);
   const [mirrored, setMirrored] = useState(false);
   const [bgTemplate, setBgTemplate] = useState("none");
+  const [echoEnabled, setEchoEnabled] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -50,8 +52,10 @@ export default function PreFlightPage({
     if (typeof window === "undefined") return;
     const savedName = window.sessionStorage.getItem(STORAGE_KEY_NAME);
     const savedLang = window.sessionStorage.getItem(STORAGE_KEY_LANG);
+    const savedEcho = window.sessionStorage.getItem(STORAGE_KEY_ECHO);
     if (savedName) setDisplayName(savedName);
     if (savedLang) setLang(savedLang);
+    if (savedEcho === "1") setEchoEnabled(true);
   }, []);
 
   // Cleanup camera on unmount
@@ -123,6 +127,7 @@ export default function PreFlightPage({
     streamRef.current = null;
     window.sessionStorage.setItem(STORAGE_KEY_NAME, displayName.trim());
     window.sessionStorage.setItem(STORAGE_KEY_LANG, lang);
+    window.sessionStorage.setItem(STORAGE_KEY_ECHO, echoEnabled ? "1" : "0");
     router.push(`/session/${id}/room`);
   }
 
@@ -314,7 +319,67 @@ export default function PreFlightPage({
             </select>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 28 }}>
+          {/* Echo translation toggle */}
+          <div
+            className="prejoin-echo-toggle"
+            role="switch"
+            aria-checked={echoEnabled}
+            tabIndex={0}
+            onClick={() => setEchoEnabled((v) => !v)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEchoEnabled((v) => !v); } }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              marginTop: 20,
+              padding: "10px 14px",
+              borderRadius: 10,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7, flexShrink: 0 }}>
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+              </svg>
+              <span style={{ fontSize: 13, color: "var(--fg-secondary)" }}>
+                Hear my own speech in {PICKER_LANGUAGES.find((l) => l.code === lang)?.name.split("(")[0].trim() || "my language"}
+              </span>
+            </div>
+            {/* Toggle switch */}
+            <div
+              style={{
+                position: "relative",
+                width: 36,
+                height: 20,
+                borderRadius: 10,
+                background: echoEnabled ? "#C5A880" : "rgba(255,255,255,0.12)",
+                transition: "background 0.2s",
+                flexShrink: 0,
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  left: echoEnabled ? 18 : 2,
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  background: "#fff",
+                  transition: "left 0.2s",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
             <button
               className="prejoin-enter-btn"
               onClick={handleJoin}
