@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocalParticipant, useRoomContext } from "@livekit/components-react";
 import { Track } from "livekit-client";
+import AudioVisualizer from "./AudioVisualizer";
 import {
   MicOnIcon,
   MicOffIcon,
@@ -137,6 +138,19 @@ export default function ControlBar({
   const micOn = !!microphoneTrack && !microphoneTrack.isMuted;
   const camOn = !!cameraTrack && cameraTrack.source === Track.Source.Camera && !cameraTrack.isMuted;
 
+  // Track the local mic MediaStream for the audio visualizer
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
+  useEffect(() => {
+    if (micOn && microphoneTrack?.track?.mediaStreamTrack) {
+      try {
+        const s = new MediaStream([microphoneTrack.track.mediaStreamTrack]);
+        setMicStream(s);
+      } catch { setMicStream(null); }
+    } else {
+      setMicStream(null);
+    }
+  }, [micOn, microphoneTrack]);
+
   async function toggleMic() { await localParticipant.setMicrophoneEnabled(!micOn); }
   async function toggleCam() { await localParticipant.setCameraEnabled(!camOn); }
 
@@ -194,6 +208,12 @@ export default function ControlBar({
           >
             {micOn ? <MicOnIcon /> : <MicOffIcon />}
           </button>
+          <AudioVisualizer
+            stream={micStream}
+            height={20}
+            width={28}
+            barCount={4}
+          />
           <button className="dock-chevron" title="Audio settings">
             <ChevronUpIcon />
           </button>
