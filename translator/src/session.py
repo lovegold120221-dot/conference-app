@@ -16,6 +16,7 @@ import contextlib
 import json
 import logging
 import random
+import time
 
 import websockets
 from livekit import rtc
@@ -70,6 +71,7 @@ class GeminiSession:
         self._consecutive_failures = 0
         self._tasks: list[asyncio.Task] = []
         self._closed = asyncio.Event()
+        self._transcription_segment_id = 0
 
     # --- Public API ---------------------------------------------------------
 
@@ -331,22 +333,28 @@ class GeminiSession:
                 await self._publish_transcript("", final=True)
 
     async def _publish_transcript(self, text: str, *, final: bool) -> None:
-        """Best-effort text-stream publish. Frontend filters by attributes."""
+        """Publish transcription as a data message (matching reference pattern).
+
+        The frontend consumes this via RoomEvent.DataReceived, filtering on
+        topic="transcription" and matching language.
+        """
         if not text and not final:
             return
         try:
-            # Send each chunk as its own text-stream message; frontend appends.
-            writer = await self._room.local_participant.stream_text(
-                topic="lk.translation",
-                sender_identity=self._speaker_identity,
-                attributes={
-                    "target_lang": self._target_lang,
-                    "source_identity": self._speaker_identity,
-                    "final": "true" if final else "false",
-                },
+            payload = json.dumps({
+                "type": "transcription",
+                "language": self._target_lang,
+                "source_identity": self._speaker_identity,
+                "segment_id": f"{self._target_lang}-{self._transcription_segment_id}",
+                "text": text,
+                "final": final,
+                "timestamp": int(time.time() * 1000),
+            }).encode("utf-8")
+            await self._room.local_participant.publish_data(
+                payload,
+                topic="transcription",
             )
-            if text:
-                await writer.write(text)
-            await writer.aclose()
+            if final:
+                self._transcription_segment_id += 1
         except Exception as exc:
-            logger.debug("text-stream publish failed: %s", exc)
+            logger.debug("transcription data publish failed: %s", exc)

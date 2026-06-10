@@ -1,13 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  useRemoteParticipants,
-  useTextStream,
-} from "@livekit/components-react";
+import { useRemoteParticipants, useRoomContext } from "@livekit/components-react";
+import { RoomEvent } from "livekit-client";
 import { getLanguageByCode } from "@/lib/languages";
 
-const TRANSLATION_TOPIC = "lk.translation";
+interface TranscriptData {
+  type: string;
+  language: string;
+  source_identity: string;
+  segment_id: string;
+  text: string;
+  final: boolean;
+  timestamp: number;
+}
+
+type Entry = {
+  id: string;
+  sourceIdentity: string;
+  text: string;
+  sourceLang: string | undefined;
+};
 
 type Tab = "chat" | "polls" | "captions";
 
@@ -119,12 +132,75 @@ export default function ChatSidebar({
   myLang: string;
   peerLangs: Map<string, string | undefined>;
 }) {
-  const { textStreams } = useTextStream(TRANSLATION_TOPIC);
+  const room = useRoomContext();
   const remotes = useRemoteParticipants();
   const [activeTab, setActiveTab] = useState<Tab>("captions");
   const [speakingKey, setSpeakingKey] = useState<string | null>(null);
   const cancelRef = useRef<(() => void) | null>(null);
   const bodyRef = useRef<HTMLDivElement | null>(null);
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const openRef = useRef<Map<string, number>>(new Map());
+  const myLangRef = useRef(myLang);
+  const peerLangsRef = useRef(peerLangs);
+  myLangRef.current = myLang;
+  peerLangsRef.current = peerLangs;
+
+  // ── Receive transcriptions via data channel (matches reference pattern) ──
+  useEffect(() => {
+    if (!room) return;
+
+    const handleData = (
+      payload: Uint8Array,
+      _participant: unknown,
+      _kind: unknown,
+      topic: string | undefined,
+    ) => {
+      if (topic !== "transcription") return;
+
+      try {
+        const data: TranscriptData = JSON.parse(new TextDecoder().decode(payload));
+        if (data.type !== "transcription") return;
+        // Only show captions for the user's chosen language
+        if (data.language !== myLangRef.current) return;
+
+        const sourceLang = peerLangsRef.current.get(data.source_identity);
+
+        setEntries((prev) => {
+          const openMap = openRef.current;
+          const source = data.source_identity;
+          const text = data.text.trim();
+          if (!text) return prev;
+
+          if (data.final) {
+            const idx = openMap.get(source);
+            if (idx !== undefined) {
+              const updated = [...prev];
+              updated[idx] = { ...updated[idx], text: `${updated[idx].text} ${text}`.trim() };
+              openMap.delete(source);
+              return updated;
+            }
+            return [...prev, { id: data.segment_id, sourceIdentity: source, text, sourceLang }];
+          }
+
+          // Interim — append to open entry or create new
+          const idx = openMap.get(source);
+          if (idx !== undefined) {
+            const updated = [...prev];
+            updated[idx] = { ...updated[idx], text: `${updated[idx].text} ${text}`.trim() };
+            return updated;
+          }
+          const newEntry = { id: data.segment_id, sourceIdentity: source, text, sourceLang };
+          openMap.set(source, prev.length);
+          return [...prev, newEntry];
+        });
+      } catch {
+        // Not a valid transcription JSON
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleData);
+    return () => { room.off(RoomEvent.DataReceived, handleData); };
+  }, [room]);
 
   const names = useMemo(() => {
     const map = new Map<string, string>();
@@ -133,45 +209,6 @@ export default function ChatSidebar({
     }
     return map;
   }, [remotes]);
-
-  // ── Captions entries ──
-  const entries = useMemo(() => {
-    const matching = textStreams
-      .filter((s) => s.streamInfo.attributes?.target_lang === myLang)
-      .sort((a, b) => a.streamInfo.timestamp - b.streamInfo.timestamp);
-
-    type Entry = { key: string; sourceIdentity: string; text: string; sourceLang: string | undefined };
-    const out: Entry[] = [];
-    const openIdxBySource = new Map<string, number>();
-
-    for (const s of matching) {
-      const source = s.streamInfo.attributes?.source_identity ?? s.participantInfo.identity;
-      const isFinal = s.streamInfo.attributes?.final === "true";
-      const text = s.text.trim();
-
-      if (isFinal) {
-        if (text) {
-          const idx = openIdxBySource.get(source);
-          if (idx !== undefined) {
-            out[idx].text = `${out[idx].text} ${text}`.trim();
-          } else {
-            out.push({ key: s.streamInfo.id, sourceIdentity: source, text, sourceLang: peerLangs.get(source) });
-          }
-        }
-        openIdxBySource.delete(source);
-        continue;
-      }
-      if (!text) continue;
-      const openIdx = openIdxBySource.get(source);
-      if (openIdx !== undefined) {
-        out[openIdx].text = `${out[openIdx].text} ${text}`.trim();
-      } else {
-        out.push({ key: s.streamInfo.id, sourceIdentity: source, text, sourceLang: peerLangs.get(source) });
-        openIdxBySource.set(source, out.length - 1);
-      }
-    }
-    return out;
-  }, [textStreams, myLang, peerLangs]);
 
   useEffect(() => {
     if (!open || !bodyRef.current) return;
@@ -280,7 +317,7 @@ export default function ChatSidebar({
               </div>
             ) : (
               entries.map((entry) => (
-                <div className="captions-entry" key={entry.key}>
+                <div className="captions-entry" key={entry.id}>
                   <div className="captions-entry-top">
                     <div className="captions-speaker">
                       <span className="captions-speaker-name">
@@ -293,9 +330,9 @@ export default function ChatSidebar({
                       )}
                     </div>
                     <button
-                      className={`captions-speak-btn${speakingKey === entry.key ? " speaking" : ""}`}
-                      onClick={() => handleSpeak(entry.key, entry.text)}
-                      aria-label={speakingKey === entry.key ? "Stop" : "Read aloud"}
+                      className={`captions-speak-btn${speakingKey === entry.id ? " speaking" : ""}`}
+                      onClick={() => handleSpeak(entry.id, entry.text)}
+                      aria-label={speakingKey === entry.id ? "Stop" : "Read aloud"}
                     >
                       <SpeakerSmallIcon />
                     </button>
