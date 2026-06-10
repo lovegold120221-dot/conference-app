@@ -137,3 +137,73 @@ Comprehensive media queries in `globals.css`:
 1. End-to-end test: join a room with 2+ users, verify each hears the correct language
 2. Implement Medumba dictionary display in the captions panel (populate from `status: "dictionary"`)
 3. Add Gemini session health monitoring + auto-reconnect in `geminiLiveClient.ts`
+
+---
+
+## TASK-20260610-003: Execute todo.md — Translation Routing + Own Screen-Share Audio
+
+### START RECORD
+- STATUS: COMPLETED
+- Start time: 2026-06-10
+- User request: Execute the todo.md from the translatorr/gemini-live-api-examples repo — strict product requirements, user flows, translation logic, acceptance criteria, especially the "do not translate my own mic back to me" rule and "do translate my own screen-share audio back to me"
+- Reference: `/Users/eburon/traslatorr/gemini-live-api-examples/gemini-live-translate-livekit/todo.md`
+
+### GAP ANALYSIS
+
+The todo.md defines strict requirements our codebase didn't fully meet:
+
+| Requirement | Before | After |
+|-------------|--------|-------|
+| **Explicit routing function** `shouldTranslateForListener()` | ❌ Not present (implicit in pipeline logic) | ✅ Created `src/lib/translationRouting.ts` with 6 tests |
+| **Own microphone never translated back** | ✅ Enforced by `echoTargetLanguage: false` + pipeline excludes local mic | ✅ Verified + formalized in routing function |
+| **Own screen-share audio MUST be translated back** | ❌ Local screen-share audio not in pipeline | ✅ Now added to pipeline via local track subscription |
+| **Screen share captures system audio** | ❌ `audio: false` in getDisplayMedia | ✅ Changed to `audio: true` + publishes `ScreenShareAudio` track |
+| **Unit tests for routing logic** | ❌ No test infrastructure | ✅ vitest + 6 passing tests for `shouldTranslateForListener` |
+
+### WHAT CHANGED
+
+**New files:**
+| File | Purpose |
+|------|---------|
+| `src/lib/translationRouting.ts` | Pure `shouldTranslateForListener()` function implementing the translation routing matrix from todo.md |
+| `src/lib/translationRouting.test.ts` | 6 vitest unit tests covering all matrix cases (own mic, own screen, remote mic, remote screen) |
+| `vitest.config.ts` | Vitest configuration for unit testing |
+
+**Modified files:**
+| File | What |
+|------|------|
+| `src/app/session/[id]/room/ControlBar.tsx` | `getDisplayMedia` now requests `audio: true`; publishes both video (`ScreenShare`) and audio (`ScreenShareAudio`) tracks |
+| `src/lib/useGeminiTranslation.ts` | Added `useLocalParticipant()`; new effect subscribes to local `ScreenShareAudio` tracks and adds them to the pipeline with composite ID `local:screen_share_audio` |
+| `src/lib/useGeminiTranslation.ts` | Added `Track` import from livekit-client for source detection |
+
+### VALIDATION
+- `npm run build` — compiles successfully, TypeScript passes, all 7 routes generated
+- `pnpm vitest run` — 6/6 tests pass for `shouldTranslateForListener()`
+- Build includes all changes, no TypeScript errors
+
+### TRANSLATION ROUTING MATRIX IMPLEMENTED
+
+| Audio Source | Owner | Translated for Listener? | Target Language |
+|-------------|------|-------------------------|----------------|
+| Own microphone | Listener | **No** (echo rule) | Never |
+| Own screen-share audio | Listener | **Yes** | Listener's selected language |
+| Remote microphone | Other | **Yes** | Listener's selected language |
+| Remote screen-share audio | Other | **Yes** | Listener's selected language |
+
+This exactly matches the matrix specified in the todo.md.
+
+### ARCHITECTURE NOTES
+- The routing function is pure (no LiveKit/React deps) — enables unit testing
+- Local screen-share audio is added to the **same pipeline** as remote audio
+- `echoTargetLanguage: false` on Gemini session prevents own mic echo
+- Own screen-share audio (tab/system audio) is NOT user's voice → gets translated normally
+- Single Gemini session handles: remote mics + remote screen-share + own screen-share
+
+### NEXT STEPS
+1. Implement Translation Panel (dedicated UI for translation settings per todo.md §9)
+2. Implement Chat Panel (group chat, private messages, emoji, file attachments per todo.md §11)
+3. Implement Host Controls (kick, mute all, lobby management per todo.md §6)
+4. Improve landing page with room name input, recent rooms, share modal (todo.md §3)
+5. Add Adapter interfaces for Conference/Translation/SpeechToText/TextToSpeech (todo.md §2)
+6. Implement remaining error/edge states (todo.md §16)
+7. Add accessibility improvements (keyboard nav, ARIA, reduced motion per todo.md §14)

@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  useLocalParticipant,
   useRemoteParticipants,
   useRoomContext,
 } from "@livekit/components-react";
-import { RoomEvent } from "livekit-client";
+import { RoomEvent, Track } from "livekit-client";
 import { GeminiLiveClient, type GeminiStatus } from "./geminiLiveClient";
 import { AudioPipeline } from "./audioPipeline";
 import { DICTIONARY_LANGS, NATIVE_LANG } from "./config";
@@ -47,6 +48,7 @@ export function useGeminiTranslation(
   const playbackMuted = options?.playbackMuted ?? false;
   const room = useRoomContext();
   const remoteParticipants = useRemoteParticipants();
+  const { localParticipant } = useLocalParticipant();
 
   const [status, setStatus] = useState<GeminiStatus | "idle" | "dictionary">(
     "idle",
@@ -205,6 +207,49 @@ export function useGeminiTranslation(
       room.off(RoomEvent.TrackUnsubscribed, handleUnsub);
     };
   }, [room]);
+
+  // ── Track local participant's screen-share audio tracks ──
+  // These must be translated back to the current user (unlike own microphone).
+  useEffect(() => {
+    if (!room || !localParticipant) return;
+
+    const streamId = (source: string) => `local:${source}`;
+
+    const handleLocalSub = (publication: any) => {
+      const pipeline = pipelineRef.current;
+      if (!pipeline) return;
+      if (publication.source !== Track.Source.ScreenShareAudio) return;
+      if (publication.track?.mediaStream) {
+        pipeline.addRemoteTrack(streamId("screen_share_audio"), publication.track.mediaStream);
+      }
+    };
+
+    const handleLocalUnsub = (publication: any) => {
+      const pipeline = pipelineRef.current;
+      if (!pipeline) return;
+      if (publication.source !== Track.Source.ScreenShareAudio) return;
+      pipeline.removeRemoteTrack(streamId("screen_share_audio"));
+    };
+
+    // Listen to local participant's track publications
+    localParticipant.on(RoomEvent.TrackPublished, handleLocalSub);
+    localParticipant.on(RoomEvent.TrackUnpublished, handleLocalUnsub);
+
+    // Also check already-published tracks
+    for (const pub of localParticipant.audioTrackPublications.values()) {
+      if (pub.source === Track.Source.ScreenShareAudio && pub.track?.mediaStream) {
+        pipelineRef.current?.addRemoteTrack(
+          streamId("screen_share_audio"),
+          pub.track.mediaStream,
+        );
+      }
+    }
+
+    return () => {
+      localParticipant.off(RoomEvent.TrackPublished, handleLocalSub);
+      localParticipant.off(RoomEvent.TrackUnpublished, handleLocalUnsub);
+    };
+  }, [room, localParticipant]);
 
   // ── Allow external sources to push captions (e.g. data channel for byv) ──
   const addExternalCaption = useCallback((entry: CaptionEntry) => {

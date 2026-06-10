@@ -162,19 +162,44 @@ export default function ControlBar({
 
   async function toggleScreenShare() {
     if (screenSharing) {
+      // Stop both video and audio screen share tracks
       for (const pub of localParticipant.videoTrackPublications.values()) {
         if (pub.source === Track.Source.ScreenShare) {
+          await localParticipant.unpublishTrack(pub.track!.mediaStreamTrack);
+        }
+      }
+      for (const pub of localParticipant.audioTrackPublications.values()) {
+        if (pub.source === Track.Source.ScreenShareAudio) {
           await localParticipant.unpublishTrack(pub.track!.mediaStreamTrack);
         }
       }
       setScreenSharing(false);
     } else {
       try {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true,
+        });
         const screenTrack = stream.getVideoTracks()[0];
         if (!screenTrack) return;
         screenTrack.onended = () => setScreenSharing(false);
-        await localParticipant.publishTrack(screenTrack, { source: Track.Source.ScreenShare, simulcast: false });
+
+        // Publish video track
+        await localParticipant.publishTrack(screenTrack, {
+          source: Track.Source.ScreenShare,
+          simulcast: false,
+        });
+
+        // Publish audio track if available
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          const audioTrack = audioTracks[0];
+          await localParticipant.publishTrack(audioTrack, {
+            source: Track.Source.ScreenShareAudio,
+            simulcast: false,
+          });
+        }
+
         setScreenSharing(true);
       } catch { setScreenSharing(false); }
     }
